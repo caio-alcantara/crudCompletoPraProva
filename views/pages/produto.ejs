@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+
+    <style>
+      body {
+        margin: 0;
+        padding: 20px;
+      }
+      #criarProduto {
+        display: flex;
+        flex-direction: column;
+        max-width: 20%;
+      }
+      #atualizarProduto {
+        display: flex;
+        flex-direction: column;
+        max-width: 20%;
+      }
+      #criarProduto input {
+        padding: 10px;
+      }
+      #atualizarProduto input {
+        padding: 10px;
+      }
+
+      #criarProduto button {
+        padding: 10px;
+        margin-top: 10px;
+      }
+      #atualizarProduto button {
+        padding: 10px;
+        margin-top: 10px;
+      }
+
+      h1 {
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Loja de produtos</h1>
+
+    <!-- Criar produto -->
+    <h2>Adicione um produto</h2>
+    <div id="criarProduto">
+      <label for="productName">Nome do produto:</label>
+      <input type="text" name="productName" id="productName" required />
+      <label for="descricao">Descrição do produto:</label>
+      <textarea name="descricao" id="productDesc"></textarea>
+      <label for="preco">Preço do produto:</label>
+      <input type="number" name="preco" id="productPrice" />
+      <button id="adcProduto">Adicionar produto</button>
+    </div>
+
+    <h2>Listar todos os produtos</h2>
+    <div id="produtosList">
+      <button id="listProduto">Listar todos os produtos</button>
+    </div>
+
+    <h2>Busque um produto por id</h2>
+    <div id="buscarProduto">
+      <label for="productId">Id do produto:</label>
+      <input type="number" name="productId" id="productId" />
+      <button id="prodPorIdBtn">Buscar produto por ID</button>
+    </div>
+
+    <h2>Atualizar produto</h2>
+    <div id="atualizarProduto">
+      <label for="productIdUpdate">Id do produto:</label>
+      <input type="number" name="productIdUpdate" id="productIdUpdate" />
+      <label for="novoNome">Novo nome para o produto:</label>
+      <input type="text" name="novoNome" id="novoNome" />
+      <label for="novaDesc">Nova descrição para o produto:</label>
+      <textarea type="text" name="novaDesc" id="novaDesc"> </textarea>
+      <button id="atualizarBtn">Atualizar produto</button>
+    </div>
+
+    <h2>Deletar produto</h2>
+    <div>
+      <label for="productIdDelete">Id do produto:</label>
+      <input type="number" name="productIdDelete" id="productIdDelete" />
+      <button id="delBtn">Deletar produto</button>
+    </div>
+
+    <script>
+      async function createProduct() {
+        const nome = document.getElementById("productName").value;
+        const descricao = document.getElementById("productDesc").value;
+        const preco = document.getElementById("productPrice").value;
+        if (!nome || !descricao || !preco) {
+          alert("Preencha todos os campos para criar um produto!");
+          return;
+        }
+        console.log(nome, descricao, preco);
+
+        try {
+          const response = await fetch("/product/create", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              nome,
+              descricao,
+              preco,
+            }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              console.log("Sucess:", data);
+            });
+        } catch (error) {
+          console.log("Erro:", error);
+        }
+      }
+
+      async function listProducts() {
+        try {
+          const response = await fetch("/product/findAll", {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          })
+            .then((response) => response.json())
+
+            .then((data) => {
+              console.log("Produtos:", data);
+              document.getElementById("produtosList").innerHTML = `
+                <div id="produtosList">
+                    <button id="listProduto">Listar todos os produtos</button>
+                </div>
+              `;
+              document
+                .getElementById("listProduto")
+                .addEventListener("click", async () => {
+                  await listProducts();
+                });
+              data.forEach((element) => {
+                let produto = document.createElement("p");
+                produto.innerText = `
+                    Nome: ${element.nome}, Descrição: ${element.descricao}, R$${element.preco}, id: ${element.id};
+                `;
+                document.getElementById("produtosList").appendChild(produto);
+              });
+            });
+        } catch (error) {
+          console.log("Erro:", error);
+        }
+      }
+
+      async function getProductById() {
+        try {
+          let id = document.getElementById("productId").value;
+          const response = await fetch(`/product/findOne/${id}`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              console.log("Sucess:", data);
+              document.getElementById("buscarProduto").innerHTML = `
+                     <label for="productId">Id do produto:</label>
+                     <input type="number" name="productId" id="productId" />
+                     <button id="prodPorIdBtn">Buscar produto por ID</button>
+                `;
+              document
+                .getElementById("prodPorIdBtn")
+                .addEventListener("click", async () => {
+                  await getProductById();
+                });
+              let produto = document.createElement("p");
+              produto.innerText = `
+                    Nome: ${data.nome}, Descrição: ${data.descricao}, R$${data.preco}, id: ${data.id};
+                `;
+              document.getElementById("buscarProduto").appendChild(produto);
+            });
+        } catch (error) {
+          alert("Produto não encontrado");
+          console.log("Erro:", error);
+        }
+      }
+
+      async function updateProduct() {
+        try {
+          let id = document.getElementById("productIdUpdate").value;
+          let nome = document.getElementById("novoNome").value;
+          let descricao = document.getElementById("novaDesc").value;
+
+          const response = await fetch(`/product/update/${id}`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ nome, descricao }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              console.log("Sucess:", data);
+            });
+        } catch (error) {
+          console.log(error);
+        }
+      }
+
+      async function deleteProduct() {
+        try {
+          let id = document.getElementById("productIdDelete").value;
+          const response = await fetch(`/product/delete/${id}`, {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          })
+          .then((response) => response.json())
+          .then((data) => {
+            console.log("Succes:", data)
+            alert('Produto deletado');
+          })
+        } catch (error) {
+          console.log("Erro:", error);
+        }
+      }
+
+      document
+        .getElementById("adcProduto")
+        .addEventListener("click", async () => {
+          await createProduct();
+        });
+
+      document
+        .getElementById("listProduto")
+        .addEventListener("click", async () => {
+          await listProducts();
+        });
+
+      document
+        .getElementById("prodPorIdBtn")
+        .addEventListener("click", async () => {
+          await getProductById();
+        });
+
+      document
+        .getElementById("atualizarBtn")
+        .addEventListener("click", async () => {
+          await updateProduct();
+        });
+
+        document
+        .getElementById("delBtn")
+        .addEventListener("click", async () => {
+          await deleteProduct();
+        });
+    </script>
+  </body>
+</html>
